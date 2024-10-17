@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import Globe from "./globe";
 import Station from "./station";
+import Airplane from "./airplane";
 
 export default class WorldBuilder {
   constructor() {
@@ -14,15 +15,17 @@ export default class WorldBuilder {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.ambientLight = new THREE.AmbientLight(0x404040);
 
-    this.scene.add(this.ambientLight);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1); // White directional light
+    this.directionalLight.position.set(0, 1, 1); // Position the light
+
+    this.scene.add(this.directionalLight);
     this.globe = new Globe(this.scene, this.worldRadius);
+    this.globe.getMesh().rotation.z = 0.09;
     this.handleResize();
 
     this.stations = [];
-
-    this.generateRandomStations();
+    this.airplanes = [];
   }
 
   handleResize() {
@@ -35,24 +38,19 @@ export default class WorldBuilder {
 
   addStations(stationsData) {
     for (const { lat, long, name } of stationsData) {
-      const station = new Station({ scene: this.scene, globe: this.globe, latDeg: lat, longDeg: long, name });
+      const station = new Station({ globe: this.globe, latDeg: lat, longDeg: long, name });
       this.stations.push(station);
     }
   }
 
-  generateRandomStations() {
-    const textureLoader = new THREE.TextureLoader();
-    const specularMap = textureLoader.load("./2k_earth_specular_map.tif");
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
+  addAirplanes(airplanesData) {
+    for (const { start, end, name } of airplanesData) {
+      const startingStation = this.stations.find((station) => station.name === start);
+      const endingStation = this.stations.find((station) => station.name === end);
 
-    // canvas.width = specularMap.image.width;
-    // canvas.height = specularMap.image.height;
-    // context.drawImage(image.image, 0, 0);
-
-    // const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-    // console.log(imageData);
+      const airplane = new Airplane({ globe: this.globe, start: startingStation, end: endingStation, name });
+      this.airplanes.push(airplane);
+    }
   }
 
   getScene() {
@@ -69,5 +67,9 @@ export default class WorldBuilder {
 
   getRenderer() {
     return this.renderer;
+  }
+
+  getMesh() {
+    return this.globe.getMesh();
   }
 }

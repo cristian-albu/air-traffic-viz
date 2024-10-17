@@ -29,7 +29,22 @@ export default class Globe {
     const y = this.radius * Math.cos(theta);
     const z = this.radius * Math.sin(theta) * Math.sin(phi);
 
-    return { x, y, z };
+    return new THREE.Vector3(x, y, z);
+  }
+
+  getQuarterion(x, y, z) {
+    // A quaternion is computed to rotate the station to align its local "up" axis with the normal vector. The more you know.
+
+    // I was thinking of doing some euler angles or whatever they are called. Calculate the angle based on origin and current x, y, z and then set the rotation.
+    // Apparently this avoids something called gimbal lock, allow for smooth rotations without problems from 359 to 0 animations
+    // Also this is optimized for space and computation
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0), // Station's default "up" direction
+      new THREE.Vector3(x, y, z).normalize() // Normal vector pointing away from the sphere's center
+    );
+
+    return quaternion;
   }
 
   getMesh() {
